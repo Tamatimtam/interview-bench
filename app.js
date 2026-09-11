@@ -69,12 +69,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (navViewWorkspaceBtn) navViewWorkspaceBtn.classList.add("active");
 
       if (window.gsap && !prefersReducedMotion) {
-        // Smooth Out from Home
-        gsap.to(homeView, {
-          opacity: 0,
-          y: -12,
-          duration: 0.22,
-          ease: "power2.in",
+        // Subtle anticipation & slide out with weight
+        const homeIntro = homeView ? homeView.querySelector(".home-intro-card") : null;
+        const problemLedger = homeView ? homeView.querySelector(".problem-ledger") : null;
+
+        const tl = gsap.timeline({
           onComplete: () => {
             if (homeView) homeView.style.display = "none";
             if (workspaceView) {
@@ -84,29 +83,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (editor) editor.refresh();
 
-            // Staggered In to Workspace: Left Pane & Right Pane
+            // Settle in to workspace: Left Pane & Right Pane with heavy, physical deceleration
             const leftPane = workspaceView.querySelector(".left-pane");
             const rightPane = workspaceView.querySelector(".right-pane");
 
             gsap.fromTo(
               workspaceView,
               { opacity: 0 },
-              { opacity: 1, duration: 0.15 }
+              { opacity: 1, duration: 0.25, ease: "power2.out" }
             );
 
             gsap.fromTo(
               [leftPane, rightPane],
-              { opacity: 0, y: 16 },
+              { opacity: 0, y: 22, scale: 0.992 },
               {
                 opacity: 1,
                 y: 0,
-                duration: 0.38,
-                stagger: 0.08,
-                ease: "power3.out",
+                scale: 1,
+                duration: 0.55,
+                stagger: 0.12,
+                ease: "expo.out",
                 clearProps: "transform,opacity"
               }
             );
           }
+        });
+
+        tl.to([homeIntro, problemLedger], {
+          opacity: 0,
+          y: -16,
+          scale: 0.995,
+          duration: 0.28,
+          stagger: 0.05,
+          ease: "power3.inOut"
         });
       } else {
         if (homeView) homeView.style.display = "none";
@@ -118,11 +127,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (navViewWorkspaceBtn) navViewWorkspaceBtn.classList.remove("active");
 
       if (window.gsap && !prefersReducedMotion) {
-        gsap.to(workspaceView, {
-          opacity: 0,
-          y: 12,
-          duration: 0.2,
-          ease: "power2.in",
+        const leftPane = workspaceView.querySelector(".left-pane");
+        const rightPane = workspaceView.querySelector(".right-pane");
+
+        const tl = gsap.timeline({
           onComplete: () => {
             if (workspaceView) workspaceView.style.display = "none";
             if (homeView) {
@@ -136,22 +144,33 @@ document.addEventListener("DOMContentLoaded", () => {
             gsap.fromTo(
               homeView,
               { opacity: 0 },
-              { opacity: 1, duration: 0.15 }
+              { opacity: 1, duration: 0.25, ease: "power2.out" }
             );
 
+            // Settle into home view with weighted momentum
             gsap.fromTo(
               [homeIntro, problemLedger],
-              { opacity: 0, y: 18 },
+              { opacity: 0, y: 24, scale: 0.99 },
               {
                 opacity: 1,
                 y: 0,
-                duration: 0.38,
-                stagger: 0.1,
-                ease: "power3.out",
+                scale: 1,
+                duration: 0.6,
+                stagger: 0.14,
+                ease: "expo.out",
                 clearProps: "transform,opacity"
               }
             );
           }
+        });
+
+        tl.to([rightPane, leftPane], {
+          opacity: 0,
+          y: 16,
+          scale: 0.995,
+          duration: 0.26,
+          stagger: 0.05,
+          ease: "power3.inOut"
         });
       } else {
         if (homeView) homeView.style.display = "block";
@@ -202,8 +221,24 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
 
       row.addEventListener("click", () => {
-        loadProblem(prob.id);
-        switchView("workspace");
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (window.gsap && !prefersReducedMotion) {
+          // Tactile press & intention pulse
+          gsap.to(row, {
+            scale: 0.985,
+            y: 1.5,
+            duration: 0.09,
+            ease: "power2.in",
+            onComplete: () => {
+              gsap.to(row, { scale: 1, y: 0, duration: 0.15, ease: "power2.out" });
+              loadProblem(prob.id);
+              switchView("workspace");
+            }
+          });
+        } else {
+          loadProblem(prob.id);
+          switchView("workspace");
+        }
       });
 
       homeProblemLedgerList.appendChild(row);
@@ -376,15 +411,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.gsap && !prefersReducedMotion && paneContent && paneContent.offsetParent !== null) {
       gsap.to(paneContent, {
         opacity: 0,
-        y: -6,
-        duration: 0.12,
+        y: -10,
+        scale: 0.995,
+        duration: 0.18,
         ease: "power2.in",
         onComplete: () => {
           applyContentUpdate();
           gsap.fromTo(
             paneContent,
-            { opacity: 0, y: 8 },
-            { opacity: 1, y: 0, duration: 0.25, ease: "power3.out", clearProps: "transform,opacity" }
+            { opacity: 0, y: 14, scale: 0.99 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.45,
+              ease: "expo.out",
+              clearProps: "transform,opacity"
+            }
           );
         }
       });
@@ -410,15 +453,23 @@ document.addEventListener("DOMContentLoaded", () => {
           if (v.classList.contains("active") && v !== targetView) {
             gsap.to(v, {
               opacity: 0,
-              duration: 0.1,
-              ease: "power1.in",
+              y: -6,
+              duration: 0.14,
+              ease: "power2.in",
               onComplete: () => {
                 v.classList.remove("active");
                 targetView.classList.add("active");
                 gsap.fromTo(
                   targetView,
-                  { opacity: 0, y: 6 },
-                  { opacity: 1, y: 0, duration: 0.22, ease: "power2.out", clearProps: "transform,opacity" }
+                  { opacity: 0, y: 10, scale: 0.997 },
+                  {
+                    opacity: 1,
+                    y: 0,
+                    scale: 1,
+                    duration: 0.38,
+                    ease: "expo.out",
+                    clearProps: "transform,opacity"
+                  }
                 );
               }
             });
@@ -649,7 +700,7 @@ document.addEventListener("DOMContentLoaded", () => {
     switchView("workspace");
   });
 
-  // 9. Problem Catalog Drawer Implementation with GSAP
+  // 9. Problem Catalog Drawer Implementation with GSAP & Physical Momentum
   function openModal() {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     problemCatalogModal.classList.remove("hidden");
@@ -662,14 +713,27 @@ document.addEventListener("DOMContentLoaded", () => {
       const backdrop = problemCatalogModal.querySelector(".modal-backdrop");
       const cards = modalCardList.querySelectorAll(".problem-card");
 
-      gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" });
-      gsap.fromTo(drawer, { x: "-100%" }, { x: "0%", duration: 0.32, ease: "power3.out" });
+      gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" });
+      gsap.fromTo(
+        drawer,
+        { x: "-100%" },
+        { x: "0%", duration: 0.48, ease: "expo.out" }
+      );
 
       if (cards.length > 0) {
         gsap.fromTo(
           cards,
-          { opacity: 0, x: -16 },
-          { opacity: 1, x: 0, duration: 0.3, stagger: 0.04, delay: 0.1, ease: "power2.out", clearProps: "transform,opacity" }
+          { opacity: 0, x: -20, scale: 0.98 },
+          {
+            opacity: 1,
+            x: 0,
+            scale: 1,
+            duration: 0.42,
+            stagger: 0.05,
+            delay: 0.12,
+            ease: "expo.out",
+            clearProps: "transform,opacity"
+          }
         );
       }
     }
@@ -681,10 +745,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const backdrop = problemCatalogModal.querySelector(".modal-backdrop");
 
     if (window.gsap && !prefersReducedMotion && drawer && backdrop) {
-      gsap.to(backdrop, { opacity: 0, duration: 0.18, ease: "power2.in" });
+      gsap.to(backdrop, { opacity: 0, duration: 0.26, ease: "power2.in" });
       gsap.to(drawer, {
         x: "-100%",
-        duration: 0.24,
+        duration: 0.32,
         ease: "power3.in",
         onComplete: () => {
           problemCatalogModal.classList.add("hidden");
