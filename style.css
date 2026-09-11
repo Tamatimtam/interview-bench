@@ -1244,3 +1244,232 @@ html, body {
   font-family: var(--font-mono);
   text-align: center;
 }
+
+/* ==========================================================================
+   Hidden Studio Mode ("Canva Mode") Styles - Toggled via studio()
+   ========================================================================== */
+
+body.studio-active [contenteditable="true"] {
+  outline: 1px dashed rgba(56, 139, 253, 0.4);
+  border-radius: 4px;
+  padding: 2px 4px;
+  transition: outline-color 0.15s ease, background-color 0.15s ease;
+}
+
+body.studio-active [contenteditable="true"]:hover {
+  outline-color: var(--accent-blue);
+  background-color: rgba(56, 139, 253, 0.05);
+  cursor: text;
+}
+
+body.studio-active [contenteditable="true"]:focus {
+  outline: 2px solid var(--accent-blue);
+  background-color: rgba(56, 139, 253, 0.08);
+}
+
+body.studio-active .studio-block {
+  position: relative;
+  cursor: grab;
+}
+
+body.studio-active .studio-block.studio-dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+body.studio-active .studio-block.studio-drag-over {
+  border-top: 2px solid var(--accent-blue) !important;
+}
+
+.studio-remove-block-btn {
+  background: rgba(248, 81, 73, 0.15);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  color: var(--accent-red);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  line-height: 1;
+  margin-left: auto;
+  transition: all 0.15s ease;
+}
+
+.studio-remove-block-btn:hover {
+  background: var(--accent-red);
+  color: #fff;
+}
+
+/* Studio Floating Dock */
+.studio-dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  animation: studioSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes studioSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.studio-dock-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.studio-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding-right: 8px;
+  border-right: 1px solid var(--border-color);
+}
+
+.studio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  animation: pulseGreen 2s infinite ease-in-out;
+}
+
+@keyframes pulseGreen {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+.studio-dock-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.studio-btn {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.studio-btn:hover {
+  background-color: #30363d;
+  border-color: #484f58;
+}
+
+.studio-btn-primary {
+  background-color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+.studio-btn-primary:hover {
+  background-color: #1f6feb;
+  border-color: #1f6feb;
+}
+
+.studio-btn-save {
+  background-color: var(--accent-green-subtle);
+  border-color: rgba(46, 160, 67, 0.4);
+  color: #7ee787;
+}
+
+.studio-btn-save:hover {
+  background-color: var(--accent-green);
+  color: #fff;
+}
+
+.studio-btn-danger {
+  color: var(--text-secondary);
+}
+
+.studio-btn-danger:hover {
+  color: var(--accent-red);
+  background-color: rgba(248, 81, 73, 0.1);
+  border-color: rgba(248, 81, 73, 0.3);
+}
+
+/* Image container and resize handle */
+.studio-img-wrap {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  background-color: rgba(22, 27, 34, 0.5);
+}
+
+.studio-img-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.studio-img-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.studio-resize-handle {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  width: 16px;
+  height: 16px;
+  background: var(--accent-blue);
+  border: 2px solid #fff;
+  border-radius: 4px;
+  cursor: nwse-resize;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+/* Studio Toast */
+.studio-toast {
+  position: absolute;
+  top: -42px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0d1117;
+  color: #f0f6fc;
+  border: 1px solid #30363d;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  white-space: nowrap;
+}
