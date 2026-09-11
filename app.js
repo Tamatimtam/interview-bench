@@ -58,20 +58,105 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentActiveView = "home";
 
   function switchView(viewName) {
+    if (currentActiveView === viewName) return;
     currentActiveView = viewName;
+
+    // Check if user prefers reduced motion
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     if (viewName === "workspace") {
-      if (homeView) homeView.style.display = "none";
-      if (workspaceView) workspaceView.style.display = "flex";
       if (navViewHomeBtn) navViewHomeBtn.classList.remove("active");
       if (navViewWorkspaceBtn) navViewWorkspaceBtn.classList.add("active");
-      setTimeout(() => {
+
+      if (window.gsap && !prefersReducedMotion) {
+        // Smooth Out from Home
+        gsap.to(homeView, {
+          opacity: 0,
+          y: -12,
+          duration: 0.22,
+          ease: "power2.in",
+          onComplete: () => {
+            if (homeView) homeView.style.display = "none";
+            if (workspaceView) {
+              workspaceView.style.display = "flex";
+              workspaceView.style.opacity = 0;
+            }
+
+            if (editor) editor.refresh();
+
+            // Staggered In to Workspace: Left Pane & Right Pane
+            const leftPane = workspaceView.querySelector(".left-pane");
+            const rightPane = workspaceView.querySelector(".right-pane");
+
+            gsap.fromTo(
+              workspaceView,
+              { opacity: 0 },
+              { opacity: 1, duration: 0.15 }
+            );
+
+            gsap.fromTo(
+              [leftPane, rightPane],
+              { opacity: 0, y: 16 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.38,
+                stagger: 0.08,
+                ease: "power3.out",
+                clearProps: "transform,opacity"
+              }
+            );
+          }
+        });
+      } else {
+        if (homeView) homeView.style.display = "none";
+        if (workspaceView) workspaceView.style.display = "flex";
         if (editor) editor.refresh();
-      }, 50);
+      }
     } else {
-      if (homeView) homeView.style.display = "block";
-      if (workspaceView) workspaceView.style.display = "none";
       if (navViewHomeBtn) navViewHomeBtn.classList.add("active");
       if (navViewWorkspaceBtn) navViewWorkspaceBtn.classList.remove("active");
+
+      if (window.gsap && !prefersReducedMotion) {
+        gsap.to(workspaceView, {
+          opacity: 0,
+          y: 12,
+          duration: 0.2,
+          ease: "power2.in",
+          onComplete: () => {
+            if (workspaceView) workspaceView.style.display = "none";
+            if (homeView) {
+              homeView.style.display = "block";
+              homeView.style.opacity = 0;
+            }
+
+            const homeIntro = homeView.querySelector(".home-intro-card");
+            const problemLedger = homeView.querySelector(".problem-ledger");
+
+            gsap.fromTo(
+              homeView,
+              { opacity: 0 },
+              { opacity: 1, duration: 0.15 }
+            );
+
+            gsap.fromTo(
+              [homeIntro, problemLedger],
+              { opacity: 0, y: 18 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.38,
+                stagger: 0.1,
+                ease: "power3.out",
+                clearProps: "transform,opacity"
+              }
+            );
+          }
+        });
+      } else {
+        if (homeView) homeView.style.display = "block";
+        if (workspaceView) workspaceView.style.display = "none";
+      }
     }
   }
 
@@ -247,6 +332,8 @@ document.addEventListener("DOMContentLoaded", () => {
     selectedCaseIndex = 0;
     currentTestResults = null;
 
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     // Update Dropdown value
     problemSelect.value = currentProblem.id;
 
@@ -259,39 +346,88 @@ document.addEventListener("DOMContentLoaded", () => {
       editorTagLabel.textContent = isSql ? "SQL (SQLite Engine)" : "Python 3 (Auto-Indent + Autocomplete)";
     }
 
-    // Update Left Pane
-    problemTitle.textContent = currentProblem.title;
-    problemCategory.textContent = currentProblem.category || "Algorithm";
-    problemTag.textContent = currentProblem.tag;
-    problemTag.className = `badge ${currentProblem.badgeColor || "green"}`;
-    problemDifficulty.textContent = currentProblem.difficulty;
+    // Left Pane Content Update with Subtle GSAP Crossfade
+    const paneContent = document.querySelector(".pane-content");
 
-    problemDescription.innerHTML = currentProblem.description;
-    problemIntuition.innerHTML = currentProblem.intuition;
-    solutionCode.textContent = currentProblem.optimalSolution;
+    const applyContentUpdate = () => {
+      problemTitle.textContent = currentProblem.title;
+      problemCategory.textContent = currentProblem.category || "Algorithm";
+      problemTag.textContent = currentProblem.tag;
+      problemTag.className = `badge ${currentProblem.badgeColor || "green"}`;
+      problemDifficulty.textContent = currentProblem.difficulty;
 
-    // Load Code into Editor
-    const savedCode = localStorage.getItem(`code_${currentProblem.id}`);
-    editor.setValue(savedCode ? savedCode : currentProblem.starterCode);
-    editor.clearHistory();
+      problemDescription.innerHTML = currentProblem.description;
+      problemIntuition.innerHTML = currentProblem.intuition;
+      solutionCode.textContent = currentProblem.optimalSolution;
 
-    // Render test case chips
-    renderConsoleChips();
-    renderInitialConsole();
+      // Load Code into Editor
+      const savedCode = localStorage.getItem(`code_${currentProblem.id}`);
+      editor.setValue(savedCode ? savedCode : currentProblem.starterCode);
+      editor.clearHistory();
 
-    // Refresh Modal highlight if open
-    renderModalCardList();
+      // Render test case chips
+      renderConsoleChips();
+      renderInitialConsole();
+
+      // Refresh Modal highlight if open
+      renderModalCardList();
+    };
+
+    if (window.gsap && !prefersReducedMotion && paneContent && paneContent.offsetParent !== null) {
+      gsap.to(paneContent, {
+        opacity: 0,
+        y: -6,
+        duration: 0.12,
+        ease: "power2.in",
+        onComplete: () => {
+          applyContentUpdate();
+          gsap.fromTo(
+            paneContent,
+            { opacity: 0, y: 8 },
+            { opacity: 1, y: 0, duration: 0.25, ease: "power3.out", clearProps: "transform,opacity" }
+          );
+        }
+      });
+    } else {
+      applyContentUpdate();
+    }
   }
 
-  // 5. Tab Switching (Problem, Intuition, Solution)
+  // 5. Tab Switching (Problem, Intuition, Solution) with GSAP
   tabButtons.forEach(btn => {
     btn.addEventListener("click", () => {
-      tabButtons.forEach(b => b.classList.remove("active"));
-      tabViews.forEach(v => v.classList.remove("active"));
+      const targetViewId = btn.dataset.target;
+      const targetView = document.getElementById(targetViewId);
+      if (!targetView || btn.classList.contains("active")) return;
 
+      tabButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      const targetView = document.getElementById(btn.dataset.target);
-      if (targetView) targetView.classList.add("active");
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      if (window.gsap && !prefersReducedMotion) {
+        tabViews.forEach(v => {
+          if (v.classList.contains("active") && v !== targetView) {
+            gsap.to(v, {
+              opacity: 0,
+              duration: 0.1,
+              ease: "power1.in",
+              onComplete: () => {
+                v.classList.remove("active");
+                targetView.classList.add("active");
+                gsap.fromTo(
+                  targetView,
+                  { opacity: 0, y: 6 },
+                  { opacity: 1, y: 0, duration: 0.22, ease: "power2.out", clearProps: "transform,opacity" }
+                );
+              }
+            });
+          }
+        });
+      } else {
+        tabViews.forEach(v => v.classList.remove("active"));
+        targetView.classList.add("active");
+      }
     });
   });
 
@@ -513,17 +649,52 @@ document.addEventListener("DOMContentLoaded", () => {
     switchView("workspace");
   });
 
-  // 9. Problem Catalog Drawer Implementation
+  // 9. Problem Catalog Drawer Implementation with GSAP
   function openModal() {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     problemCatalogModal.classList.remove("hidden");
     problemCatalogModal.setAttribute("aria-hidden", "false");
     problemSearchInput.focus();
     renderModalCardList();
+
+    if (window.gsap && !prefersReducedMotion) {
+      const drawer = problemCatalogModal.querySelector(".modal-drawer");
+      const backdrop = problemCatalogModal.querySelector(".modal-backdrop");
+      const cards = modalCardList.querySelectorAll(".problem-card");
+
+      gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: "power2.out" });
+      gsap.fromTo(drawer, { x: "-100%" }, { x: "0%", duration: 0.32, ease: "power3.out" });
+
+      if (cards.length > 0) {
+        gsap.fromTo(
+          cards,
+          { opacity: 0, x: -16 },
+          { opacity: 1, x: 0, duration: 0.3, stagger: 0.04, delay: 0.1, ease: "power2.out", clearProps: "transform,opacity" }
+        );
+      }
+    }
   }
 
   function closeModal() {
-    problemCatalogModal.classList.add("hidden");
-    problemCatalogModal.setAttribute("aria-hidden", "true");
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const drawer = problemCatalogModal.querySelector(".modal-drawer");
+    const backdrop = problemCatalogModal.querySelector(".modal-backdrop");
+
+    if (window.gsap && !prefersReducedMotion && drawer && backdrop) {
+      gsap.to(backdrop, { opacity: 0, duration: 0.18, ease: "power2.in" });
+      gsap.to(drawer, {
+        x: "-100%",
+        duration: 0.24,
+        ease: "power3.in",
+        onComplete: () => {
+          problemCatalogModal.classList.add("hidden");
+          problemCatalogModal.setAttribute("aria-hidden", "true");
+        }
+      });
+    } else {
+      problemCatalogModal.classList.add("hidden");
+      problemCatalogModal.setAttribute("aria-hidden", "true");
+    }
   }
 
   openProblemCatalogBtn.addEventListener("click", openModal);

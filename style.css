@@ -1272,3 +1272,11 @@ html, body {
   font-family: var(--font-mono);
   text-align: center;
 }
+
+/* GSAP Animated Elements GPU Layers */
+#homeView, #workspaceView, .left-pane, .editor-container, .console-container, .tab-view {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
