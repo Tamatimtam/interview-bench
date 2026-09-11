@@ -48,6 +48,43 @@ document.addEventListener("DOMContentLoaded", () => {
   const homeProblemLedgerList = document.getElementById("homeProblemLedgerList");
   const ledgerCountBadge = document.getElementById("ledgerCountBadge");
 
+  // Custom Quirky Interactive Cursor Controller
+  const customCursor = document.getElementById("customCursor");
+  if (customCursor) {
+    const dot = customCursor.querySelector(".cursor-dot");
+    const ring = customCursor.querySelector(".cursor-ring");
+    let mouseX = -100, mouseY = -100;
+    let ringX = -100, ringY = -100;
+
+    window.addEventListener("mousemove", (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+    });
+
+    window.addEventListener("mousedown", () => customCursor.classList.add("cursor-click"));
+    window.addEventListener("mouseup", () => customCursor.classList.remove("cursor-click"));
+
+    function renderCursorRing() {
+      ringX += (mouseX - ringX) * 0.22;
+      ringY += (mouseY - ringY) * 0.22;
+      ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0)`;
+      requestAnimationFrame(renderCursorRing);
+    }
+    requestAnimationFrame(renderCursorRing);
+
+    window.__attachCursorHovers = function() {
+      document.querySelectorAll("button, a, select, .ledger-row, .tab-btn, .chip, .card").forEach(el => {
+        if (!el.__hasCursorListener) {
+          el.__hasCursorListener = true;
+          el.addEventListener("mouseenter", () => customCursor.classList.add("cursor-hover"));
+          el.addEventListener("mouseleave", () => customCursor.classList.remove("cursor-hover"));
+        }
+      });
+    };
+    window.__attachCursorHovers();
+  }
+
   // State
   let currentProblem = window.PROBLEMS[0];
   let currentTestResults = null;
@@ -73,6 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (navViewHomeBtn) navViewHomeBtn.classList.add("active");
       if (navViewWorkspaceBtn) navViewWorkspaceBtn.classList.remove("active");
     }
+    if (window.__attachCursorHovers) window.__attachCursorHovers();
   }
 
   if (navViewHomeBtn) navViewHomeBtn.addEventListener("click", () => switchView("home"));
@@ -85,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!homeProblemLedgerList) return;
     homeProblemLedgerList.innerHTML = "";
     if (ledgerCountBadge) {
-      ledgerCountBadge.textContent = `${window.PROBLEMS.length} Available`;
+      ledgerCountBadge.textContent = `${window.PROBLEMS.length} challenges`;
     }
 
     window.PROBLEMS.forEach((prob, idx) => {
@@ -101,16 +139,14 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="ledger-row-info">
             <span class="ledger-row-title">${escapeHtml(prob.title)}</span>
             <div class="ledger-row-sub">
-              <span class="ledger-badge">${escapeHtml(prob.category || "Algorithm")}</span>
               <span class="ledger-badge">${escapeHtml(prob.tag || "Core Pattern")}</span>
-              <span>•</span>
-              <span>${prob.testCases ? prob.testCases.length : 0} test cases</span>
+              <span>${escapeHtml(prob.summary)}</span>
             </div>
           </div>
         </div>
         <div class="ledger-row-right">
-          <span class="ledger-badge" style="color: var(--accent-blue);">${langBadge}</span>
-          <span class="ledger-badge" style="color: ${prob.difficulty === 'Hard' ? 'var(--accent-red)' : 'var(--accent-green)'};">${escapeHtml(prob.difficulty)}</span>
+          <span class="ledger-badge" style="color: var(--brand); border-color: var(--brand-border);">${langBadge}</span>
+          <span class="ledger-badge">${escapeHtml(prob.difficulty)}</span>
           <span class="ledger-solve-link">
             <span>Solve</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -125,6 +161,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       homeProblemLedgerList.appendChild(row);
     });
+
+    if (window.__attachCursorHovers) window.__attachCursorHovers();
   }
 
   // 1. Initialize CodeMirror Editor

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AlgoStudio — Problem Variations & Python Practice</title>
   
-  <!-- Fonts -->
+  <!-- Fonts: Sora (Distinctive Geometric Tech) + JetBrains Mono (Code & Meta) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- CodeMirror CSS & Themes -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
@@ -28,12 +28,18 @@
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
 </head>
 <body>
+  <!-- Custom Quirky Interactive Cursor -->
+  <div id="customCursor" class="custom-cursor" aria-hidden="true">
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+  </div>
+
   <div class="app-container">
     <!-- Navigation Bar -->
     <header class="app-header">
       <div class="header-left">
         <div class="logo-badge">
-          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="16 18 22 12 16 6"></polyline>
             <polyline points="8 6 2 12 8 18"></polyline>
           </svg>
@@ -43,7 +49,7 @@
         <nav class="header-view-nav" aria-label="View Switcher">
           <button id="navViewHomeBtn" class="header-nav-btn active" title="Workbench Note & Problem Index">
             <span class="nav-btn-index">01</span>
-            <span>Overview</span>
+            <span>Scratchpad</span>
           </button>
           <button id="navViewWorkspaceBtn" class="header-nav-btn" title="Interactive Code Editor & Test Runner">
             <span class="nav-btn-index">02</span>
@@ -61,8 +67,8 @@
             <line x1="3" y1="12" x2="3.01" y2="12"></line>
             <line x1="3" y1="18" x2="3.01" y2="18"></line>
           </svg>
-          <span>Problems</span>
-          <span id="headerProblemCountBadge" class="badge-counter">5</span>
+          <span>Catalog</span>
+          <span id="headerProblemCountBadge" class="badge-counter">7</span>
         </button>
 
         <div class="problem-selector-wrapper">
@@ -87,7 +93,7 @@
         </button>
 
         <button id="runCodeBtn" class="btn btn-primary" title="Run tests (Ctrl + Enter)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="5 3 19 12 5 21 5 3"></polygon>
           </svg>
           <span>Run Code</span>
@@ -98,62 +104,40 @@
     <!-- Minimalist Developer Home / Overview View -->
     <main id="homeView" class="home-scroll-container">
       <div class="home-content">
-        <!-- Specs Bar -->
-        <div class="home-meta-bar">
-          <div class="meta-item">
-            <span class="meta-label">ENGINE</span>
-            <span class="meta-value">Pyodide 0.26.2 (WASM)</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">SANDBOX</span>
-            <span class="meta-value">Dedicated Web Worker</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">CHAOS TIMEOUT</span>
-            <span class="meta-value">5.0s Auto-Kill Watchdog</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">LATENCY</span>
-            <span class="meta-value">~0ms (100% Client-Side)</span>
-          </div>
-        </div>
-
-        <!-- Personal Lab Note / Manifesto -->
-        <section class="workbench-note">
-          <div class="note-kicker-row">
-            <span class="kicker-pill">DEVELOPER FIELD WORKBENCH</span>
-            <span class="kicker-sub">ZERO SERVER OVERHEAD · NO QUEUES</span>
+        <!-- Personal Story & Scratchpad Note -->
+        <article class="home-intro-card">
+          <div class="intro-status-line">
+            <span class="status-pulse-dot"></span>
+            <span class="status-mono-tag">tama.lab // interview scratchpad · wasm runtime</span>
           </div>
 
-          <h1 class="workbench-lead">
-            Personal interview workbench where I log coding challenges and variations whenever I prepare for technical rounds.
-          </h1>
+          <h1 class="home-title">I got sick of HackerRank's 45-second test runner.</h1>
 
-          <p class="workbench-paragraph">
-            Whenever I face a live technical interview or explore a tricky algorithm pattern, I record the problem and all its major variations here. Practicing on traditional platforms like HackerRank often means waiting on remote worker queues, spinning up heavy IDEs, or dealing with locked edge-case tests.
+          <p class="home-narrative">
+            So I built a lightweight scratchpad for myself. Whenever an interviewer blindsides me with a weird problem twist, or when I botch a technical round, I document the problem and its edge-case variations here so I actually understand the mechanics.
           </p>
 
-          <p class="workbench-paragraph">
-            This workbench runs completely client-side in your browser via WebAssembly. Python and SQLite execute inside an isolated Web Worker equipped with a 5-second chaos watchdog timer — allowing instant test runs, zero browser freezing on infinite loops, and distraction-free study.
+          <p class="home-narrative-sub">
+            Everything compiles and executes right in your browser via Pyodide. No queue wait, no sign-in, no remote server ping. If your code accidentally hits an infinite loop (e.g. <code>while True:</code>), a 5-second watchdog worker thread kills it before your browser tab locks up.
           </p>
 
-          <div class="workbench-action-row">
-            <button id="homeLaunchWorkspaceBtn" class="btn btn-primary btn-large">
-              <span>Enter Workspace (Start Coding)</span>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          <div class="home-action-strip">
+            <button id="homeLaunchWorkspaceBtn" class="btn btn-brand">
+              <span>Open Code Workspace</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </button>
-            <span class="workbench-action-hint">or jump directly to any challenge variation below ↓</span>
+            <span class="home-hint-mono">or pick an interview problem below ↓</span>
           </div>
-        </section>
+        </article>
 
         <!-- Problem Ledger -->
         <section class="problem-ledger">
           <div class="ledger-header">
             <div>
-              <span class="ledger-tag">PROBLEM LEDGER</span>
-              <h2 class="ledger-heading">Challenges & Tricky Variations</h2>
+              <span class="ledger-mono-label">CATALOGUE</span>
+              <h2 class="ledger-title">Problems & Interview Pivots</h2>
             </div>
-            <span id="ledgerCountBadge" class="badge-counter" style="font-size:12px; padding: 4px 10px;">7 Available</span>
+            <span id="ledgerCountBadge" class="ledger-count-pill">7 challenges</span>
           </div>
 
           <div id="homeProblemLedgerList" class="ledger-table-wrap">
@@ -161,9 +145,9 @@
           </div>
         </section>
 
-        <!-- Minimalist Footer Note -->
+        <!-- Minimalist Footer -->
         <footer class="home-footer">
-          <p>AlgoStudio // Static WebAssembly Runtime · Safe in-browser execution · No external tracking</p>
+          <p>AlgoStudio · Built for quick interview iteration · 100% Client-Side WebAssembly</p>
         </footer>
       </div>
     </main>
@@ -361,9 +345,8 @@
   <script src="problems/06-sql-properties-owned.js"></script>
   <script src="problems/07-sql-active-backlogs.js"></script>
 
-  <!-- Execution Engine, Visual Studio & Application Controller -->
+  <!-- Execution Engine & Application Controller -->
   <script src="runner.js"></script>
-  <script src="studio.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
