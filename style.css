@@ -1,11 +1,11 @@
-/* AlgoStudio — Muted Pastel Green & Slate Tech Theme */
+/* AlgoStudio — Forest Sage Green & Slate Tech Theme */
 :root {
-  /* Signature Brand Color: Soft Muted Pastel Sage / Mint Green */
-  --brand: #86efac;
-  --brand-hover: #9bf3bb;
-  --brand-subtle: rgba(134, 239, 172, 0.12);
-  --brand-border: rgba(134, 239, 172, 0.28);
-  --brand-text: #0a140f;
+  /* Signature Brand Color: Soft Muted Forest Sage Green */
+  --brand: #54a070;
+  --brand-hover: rgb(96, 187, 129);
+  --brand-subtle: rgba(84, 160, 112, 0.12);
+  --brand-border: rgba(84, 160, 112, 0.28);
+  --brand-text: #ffffff;
 
   /* Surfaces & Borders */
   --bg-primary: #090b0e;
@@ -21,13 +21,13 @@
   --text-muted: #5e687c;
 
   /* Functional Status Accents */
-  --accent-pass: #86efac;
+  --accent-pass: #54a070;
   --accent-fail: #ff5555;
-  --accent-green: #86efac;
-  --accent-green-hover: #9bf3bb;
-  --accent-green-subtle: rgba(134, 239, 172, 0.12);
-  --accent-blue: #86efac;
-  --accent-blue-subtle: rgba(134, 239, 172, 0.12);
+  --accent-green: #54a070;
+  --accent-green-hover: rgb(96, 187, 129);
+  --accent-green-subtle: rgba(84, 160, 112, 0.12);
+  --accent-blue: #54a070;
+  --accent-blue-subtle: rgba(84, 160, 112, 0.12);
   --accent-amber: #e5a93c;
   --accent-amber-subtle: rgba(229, 169, 60, 0.15);
   --accent-red: #ff5555;
@@ -192,14 +192,14 @@ html, body {
   color: var(--brand-text);
   border: 1px solid var(--brand);
   font-weight: 700;
-  box-shadow: 0 2px 10px rgba(134, 239, 172, 0.2);
+  box-shadow: 0 2px 10px rgba(84, 160, 112, 0.25);
 }
 
 .btn-primary:hover:not(:disabled), .btn-brand:hover:not(:disabled) {
   background-color: var(--brand-hover);
   border-color: var(--brand-hover);
   color: var(--brand-text);
-  box-shadow: 0 3px 14px rgba(134, 239, 172, 0.35);
+  box-shadow: 0 3px 14px rgba(84, 160, 112, 0.4);
 }
 
 .btn-primary:active:not(:disabled), .btn-brand:active:not(:disabled) {
