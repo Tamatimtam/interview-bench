@@ -88,8 +88,8 @@ def reduceArrayMax(arr):
     { input: "[25, 10, 20]", expected: 100, note: "Contrast with 85 from min-cost" },
     { input: "[10, 20]", expected: 30, note: "Base 2 items (same for min/max)" },
     { input: "[4, 3, 2, 6]", expected: 38, note: "Notice how much higher than min (29)" },
-    { input: "[5, 1, 20, 8, 3]", expected: 87, note: "Bigger spread" },
-    { input: "[100, 200, 300]", expected: 800, note: "Triple round: (300+200) + (500+100)" }
+    { input: "[5, 1, 20, 8, 3]", expected: 134, note: "Bigger spread" },
+    { input: "[100, 200, 300]", expected: 1100, note: "Triple round: (300+200) + (500+100)" }
   ],
   functionName: "reduceArrayMax"
 });

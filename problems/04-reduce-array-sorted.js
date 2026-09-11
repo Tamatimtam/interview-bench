@@ -83,7 +83,7 @@ def reduceArraySorted(arr):
     { input: "[10, 20, 25]", expected: 85, note: "Pre-sorted version of [25, 10, 20]" },
     { input: "[2, 3, 4, 6]", expected: 29, note: "Pre-sorted version of [4, 3, 2, 6]" },
     { input: "[1, 2, 3, 4, 5]", expected: 33, note: "Clean sequence 1 to 5" },
-    { input: "[5, 10, 15, 20, 25]", expected: 175, note: "Multiples of 5" }
+    { input: "[5, 10, 15, 20, 25]", expected: 165, note: "Multiples of 5" }
   ],
   functionName: "reduceArraySorted"
 });

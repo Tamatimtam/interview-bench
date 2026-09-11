@@ -82,9 +82,9 @@ def reduceArrayK(arr, k):
   `,
   testCases: [
     { input: "[3, 2, 4, 1], 3", expected: 13, note: "Requires 1 zero padding" },
-    { input: "[1, 2, 3, 4, 5], 3", expected: 19, note: "5 items with k=3 (perfect fit)" },
+    { input: "[1, 2, 3, 4, 5], 3", expected: 21, note: "5 items with k=3 (perfect fit)" },
     { input: "[2, 4, 1, 3, 5], 4", expected: 18, note: "k=4 with padding" },
-    { input: "[5, 5, 5, 5, 5, 5, 5], 3", expected: 50, note: "7 items with k=3" }
+    { input: "[5, 5, 5, 5, 5, 5, 5], 3", expected: 65, note: "7 items with k=3" }
   ],
   functionName: "reduceArrayK"
 });
