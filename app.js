@@ -1,7 +1,12 @@
-// Application State & Controller
+// app.js - Main Application Orchestrator
+import { escapeHtml, prefersReducedMotion } from "./js/utils.js";
+import { createEditor } from "./js/editor.js";
+import { initTransitions, animateProblemLoad, animateTabSwitch } from "./js/transitions.js";
+import { initCatalog } from "./js/catalog.js";
+import { initConsole } from "./js/console.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Elements
+  // DOM Elements
   const problemSelect = document.getElementById("problemSelect");
   const tabButtons = document.querySelectorAll(".tab-btn");
   const tabViews = document.querySelectorAll(".tab-view");
@@ -19,27 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const copyCodeBtn = document.getElementById("copyCodeBtn");
   const loadSolutionToEditorBtn = document.getElementById("loadSolutionToEditorBtn");
 
-  const engineStatus = document.getElementById("engineStatus");
   const statusDot = document.getElementById("statusDot");
   const statusText = document.getElementById("statusText");
 
   const consoleTabs = document.getElementById("consoleTabs");
   const consoleBody = document.getElementById("consoleBody");
 
-  // Problem Catalog Modal Elements
-  const openProblemCatalogBtn = document.getElementById("openProblemCatalogBtn");
-  const problemCatalogModal = document.getElementById("problemCatalogModal");
-  const modalBackdrop = document.getElementById("modalBackdrop");
-  const closeModalBtn = document.getElementById("closeModalBtn");
-  const problemSearchInput = document.getElementById("problemSearchInput");
-  const clearSearchBtn = document.getElementById("clearSearchBtn");
-  const categoryChips = document.getElementById("categoryChips");
-  const difficultyChips = document.getElementById("difficultyChips");
-  const modalCardList = document.getElementById("modalCardList");
-  const modalProblemCountText = document.getElementById("modalProblemCountText");
-  const headerProblemCountBadge = document.getElementById("headerProblemCountBadge");
-
-  // Home & View Switcher Elements
+  // Home & Navigation Elements
   const homeView = document.getElementById("homeView");
   const workspaceView = document.getElementById("workspaceView");
   const navViewHomeBtn = document.getElementById("navViewHomeBtn");
@@ -47,152 +38,124 @@ document.addEventListener("DOMContentLoaded", () => {
   const homeLaunchWorkspaceBtn = document.getElementById("homeLaunchWorkspaceBtn");
   const homeProblemLedgerList = document.getElementById("homeProblemLedgerList");
   const ledgerCountBadge = document.getElementById("ledgerCountBadge");
+  const headerProblemCountBadge = document.getElementById("headerProblemCountBadge");
 
   // State
-  let currentProblem = window.PROBLEMS[0];
-  let currentTestResults = null;
-  let selectedCaseIndex = 0;
-  let activeCategory = "All";
-  let activeDifficulty = "All";
-  let searchQuery = "";
-  let currentActiveView = "home";
+  let currentProblem = (window.PROBLEMS && window.PROBLEMS[0]) || null;
 
-  function switchView(viewName) {
-    if (currentActiveView === viewName) return;
-    currentActiveView = viewName;
+  // 1. Initialize Test Console UI Module
+  const testConsole = initConsole({ consoleTabs, consoleBody });
 
-    // Check if user prefers reduced motion
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    if (viewName === "workspace") {
-      if (navViewHomeBtn) navViewHomeBtn.classList.remove("active");
-      if (navViewWorkspaceBtn) navViewWorkspaceBtn.classList.add("active");
-
-      if (window.gsap && !prefersReducedMotion) {
-        // Subtle anticipation & slide out with weight
-        const homeIntro = homeView ? homeView.querySelector(".home-intro-card") : null;
-        const problemLedger = homeView ? homeView.querySelector(".problem-ledger") : null;
-
-        const tl = gsap.timeline({
-          onComplete: () => {
-            if (homeView) homeView.style.display = "none";
-            if (workspaceView) {
-              workspaceView.style.display = "flex";
-              workspaceView.style.opacity = 0;
-            }
-
-            if (editor) editor.refresh();
-
-            // Settle in to workspace: Left Pane & Right Pane with heavy, physical deceleration
-            const leftPane = workspaceView.querySelector(".left-pane");
-            const rightPane = workspaceView.querySelector(".right-pane");
-
-            gsap.fromTo(
-              workspaceView,
-              { opacity: 0 },
-              { opacity: 1, duration: 0.25, ease: "power2.out" }
-            );
-
-            gsap.fromTo(
-              [leftPane, rightPane],
-              { opacity: 0, y: 22, scale: 0.992 },
-              {
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                duration: 0.55,
-                stagger: 0.12,
-                ease: "expo.out",
-                clearProps: "transform,opacity"
-              }
-            );
-          }
-        });
-
-        tl.to([homeIntro, problemLedger], {
-          opacity: 0,
-          y: -16,
-          scale: 0.995,
-          duration: 0.28,
-          stagger: 0.05,
-          ease: "power3.inOut"
-        });
-      } else {
-        if (homeView) homeView.style.display = "none";
-        if (workspaceView) workspaceView.style.display = "flex";
-        if (editor) editor.refresh();
-      }
-    } else {
-      if (navViewHomeBtn) navViewHomeBtn.classList.add("active");
-      if (navViewWorkspaceBtn) navViewWorkspaceBtn.classList.remove("active");
-
-      if (window.gsap && !prefersReducedMotion) {
-        const leftPane = workspaceView.querySelector(".left-pane");
-        const rightPane = workspaceView.querySelector(".right-pane");
-
-        const tl = gsap.timeline({
-          onComplete: () => {
-            if (workspaceView) workspaceView.style.display = "none";
-            if (homeView) {
-              homeView.style.display = "block";
-              homeView.style.opacity = 0;
-            }
-
-            const homeIntro = homeView.querySelector(".home-intro-card");
-            const problemLedger = homeView.querySelector(".problem-ledger");
-
-            gsap.fromTo(
-              homeView,
-              { opacity: 0 },
-              { opacity: 1, duration: 0.25, ease: "power2.out" }
-            );
-
-            // Settle into home view with weighted momentum
-            gsap.fromTo(
-              [homeIntro, problemLedger],
-              { opacity: 0, y: 24, scale: 0.99 },
-              {
-                opacity: 1,
-                y: 0,
-                scale: 1,
-                duration: 0.6,
-                stagger: 0.14,
-                ease: "expo.out",
-                clearProps: "transform,opacity"
-              }
-            );
-          }
-        });
-
-        tl.to([rightPane, leftPane], {
-          opacity: 0,
-          y: 16,
-          scale: 0.995,
-          duration: 0.26,
-          stagger: 0.05,
-          ease: "power3.inOut"
-        });
-      } else {
-        if (homeView) homeView.style.display = "block";
-        if (workspaceView) workspaceView.style.display = "none";
+  // 2. Initialize CodeMirror Editor Module
+  const editor = createEditor({
+    textarea: document.getElementById("codeEditor"),
+    onRunCode: () => runCode(),
+    onCodeChange: (value) => {
+      if (currentProblem) {
+        localStorage.setItem(`code_${currentProblem.id}`, value);
       }
     }
+  });
+
+  // 3. Initialize View Transitions Module
+  const transitions = initTransitions({
+    homeView,
+    workspaceView,
+    navViewHomeBtn,
+    navViewWorkspaceBtn,
+    editor
+  });
+
+  if (navViewHomeBtn) navViewHomeBtn.addEventListener("click", () => transitions.switchView("home"));
+  if (navViewWorkspaceBtn) navViewWorkspaceBtn.addEventListener("click", () => transitions.switchView("workspace"));
+  if (homeLaunchWorkspaceBtn) homeLaunchWorkspaceBtn.addEventListener("click", () => transitions.switchView("workspace"));
+
+  // 4. Initialize Problem Catalog Drawer Module
+  const catalog = initCatalog({
+    modal: document.getElementById("problemCatalogModal"),
+    backdrop: document.getElementById("modalBackdrop"),
+    openBtn: document.getElementById("openProblemCatalogBtn"),
+    closeBtn: document.getElementById("closeModalBtn"),
+    searchInput: document.getElementById("problemSearchInput"),
+    clearSearchBtn: document.getElementById("clearSearchBtn"),
+    categoryChipsContainer: document.getElementById("categoryChips"),
+    difficultyChipsContainer: document.getElementById("difficultyChips"),
+    cardListContainer: document.getElementById("modalCardList"),
+    countText: document.getElementById("modalProblemCountText"),
+    headerBadge: headerProblemCountBadge,
+    onSelectProblem: (problemId) => {
+      loadProblem(problemId);
+      transitions.switchView("workspace");
+    },
+    getCurrentProblemId: () => (currentProblem ? currentProblem.id : "")
+  });
+
+  // 5. Load Problem Details & Code
+  function loadProblem(problemId) {
+    currentProblem = (window.PROBLEMS || []).find(p => p.id === problemId) || window.PROBLEMS[0];
+    if (!currentProblem) return;
+
+    // Update Dropdown value
+    if (problemSelect) problemSelect.value = currentProblem.id;
+
+    // Update Language & Mode
+    const isSql = (currentProblem.language === "sql");
+    editor.setOption("mode", isSql ? "text/x-sql" : "python");
+
+    const editorTagLabel = document.querySelector(".editor-lang-tag span");
+    if (editorTagLabel) {
+      editorTagLabel.textContent = isSql ? "SQL (SQLite Engine)" : "Python 3 (Auto-Indent + Autocomplete)";
+    }
+
+    const paneContent = document.querySelector(".pane-content");
+
+    const applyContentUpdate = () => {
+      problemTitle.textContent = currentProblem.title;
+      problemCategory.textContent = currentProblem.category || "Algorithm";
+      problemTag.textContent = currentProblem.tag;
+      problemTag.className = `badge ${currentProblem.badgeColor || "green"}`;
+      problemDifficulty.textContent = currentProblem.difficulty;
+
+      problemDescription.innerHTML = currentProblem.description;
+      problemIntuition.innerHTML = currentProblem.intuition;
+      solutionCode.textContent = currentProblem.optimalSolution;
+
+      // Load Saved Code or Starter Code
+      const savedCode = localStorage.getItem(`code_${currentProblem.id}`);
+      editor.setValue(savedCode ? savedCode : currentProblem.starterCode);
+      editor.clearHistory();
+
+      // Update Console
+      testConsole.setProblem(currentProblem);
+
+      // Refresh Catalog Card Highlight
+      catalog.renderModalCardList();
+    };
+
+    animateProblemLoad(paneContent, applyContentUpdate);
   }
 
-  if (navViewHomeBtn) navViewHomeBtn.addEventListener("click", () => switchView("home"));
-  if (navViewWorkspaceBtn) navViewWorkspaceBtn.addEventListener("click", () => switchView("workspace"));
-  if (homeLaunchWorkspaceBtn) {
-    homeLaunchWorkspaceBtn.addEventListener("click", () => switchView("workspace"));
+  // 6. Navigation Problem Dropdown & Homepage Ledger
+  function refreshProblemDropdown() {
+    if (!problemSelect) return;
+    problemSelect.innerHTML = "";
+    (window.PROBLEMS || []).forEach((prob) => {
+      const opt = document.createElement("option");
+      opt.value = prob.id;
+      opt.textContent = prob.title;
+      problemSelect.appendChild(opt);
+    });
+    if (headerProblemCountBadge) headerProblemCountBadge.textContent = window.PROBLEMS.length;
   }
 
   function renderHomeProblemLedger() {
     if (!homeProblemLedgerList) return;
     homeProblemLedgerList.innerHTML = "";
     if (ledgerCountBadge) {
-      ledgerCountBadge.textContent = `${window.PROBLEMS.length} challenges`;
+      ledgerCountBadge.textContent = `${(window.PROBLEMS || []).length} challenges`;
     }
 
-    window.PROBLEMS.forEach((prob, idx) => {
+    (window.PROBLEMS || []).forEach((prob, idx) => {
       const row = document.createElement("div");
       row.className = "ledger-row";
       const numStr = String(idx + 1).padStart(2, "0");
@@ -221,9 +184,8 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
 
       row.addEventListener("click", () => {
-        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (window.gsap && !prefersReducedMotion) {
-          // Tactile press & intention pulse
+        const reducedMotion = prefersReducedMotion();
+        if (window.gsap && !reducedMotion) {
           gsap.to(row, {
             scale: 0.985,
             y: 1.5,
@@ -232,12 +194,12 @@ document.addEventListener("DOMContentLoaded", () => {
             onComplete: () => {
               gsap.to(row, { scale: 1, y: 0, duration: 0.15, ease: "power2.out" });
               loadProblem(prob.id);
-              switchView("workspace");
+              transitions.switchView("workspace");
             }
           });
         } else {
           loadProblem(prob.id);
-          switchView("workspace");
+          transitions.switchView("workspace");
         }
       });
 
@@ -245,198 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 1. Initialize CodeMirror Editor
-  const editor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
-    mode: "python",
-    theme: "material-darker",
-    lineNumbers: true,
-    indentUnit: 4,
-    tabSize: 4,
-    indentWithTabs: false,
-    smartIndent: true,
-    autoCloseBrackets: true,
-    matchBrackets: true,
-    lineWrapping: false,
-    extraKeys: {
-      "Tab": function (cm) {
-        if (cm.somethingSelected()) {
-          cm.indentSelection("add");
-        } else {
-          cm.replaceSelection("    ", "end");
-        }
-      },
-      "Shift-Tab": function (cm) {
-        cm.indentSelection("subtract");
-      },
-      "Ctrl-Space": "autocomplete",
-      "Ctrl-Enter": function () { runCode(); },
-      "Cmd-Enter": function () { runCode(); }
-    }
-  });
-
-  // Autocomplete dictionaries
-  const PYTHON_KEYWORDS = [
-    "heapq", "heappop", "heappush", "heapify", "heappushpop", "heapreplace",
-    "collections", "deque", "append", "pop", "popleft", "extend",
-    "def", "return", "if", "else", "elif", "for", "while", "in", "not", "and", "or",
-    "range", "len", "sum", "min", "max", "abs", "enumerate", "zip", "sorted",
-    "float('inf')", "float('-inf')", "int", "str", "list", "dict", "set",
-    "True", "False", "None", "print", "import", "from", "as", "pass", "continue", "break"
-  ];
-
-  const SQL_KEYWORDS = [
-    "SELECT", "FROM", "WHERE", "JOIN", "INNER JOIN", "LEFT JOIN", "RIGHT JOIN",
-    "GROUP BY", "HAVING", "ORDER BY", "ASC", "DESC", "LIMIT",
-    "DISTINCT", "COUNT", "SUM", "AVG", "MIN", "MAX",
-    "AND", "OR", "NOT", "IN", "EXISTS", "BETWEEN", "LIKE", "IS NULL", "IS NOT NULL",
-    "AS", "ON", "CASE", "WHEN", "THEN", "ELSE", "END", "UNION", "ALL"
-  ];
-
-  // Register CodeMirror Autocomplete Helper (handles both Python and SQL)
-  function getHintList(cm) {
-    const cur = cm.getCursor();
-    const token = cm.getTokenAt(cur);
-    const start = token.start;
-    const end = cur.ch;
-    const word = token.string.slice(0, end - start).trim();
-
-    const isSql = currentProblem && currentProblem.language === "sql";
-    const dictionary = isSql ? SQL_KEYWORDS : PYTHON_KEYWORDS;
-
-    if (!word) {
-      return {
-        list: dictionary.slice(0, 15),
-        from: CodeMirror.Pos(cur.line, start),
-        to: CodeMirror.Pos(cur.line, end)
-      };
-    }
-
-    const matches = dictionary.filter(k => k.toLowerCase().startsWith(word.toLowerCase()));
-    return {
-      list: matches.length ? matches : [],
-      from: CodeMirror.Pos(cur.line, start),
-      to: CodeMirror.Pos(cur.line, end)
-    };
-  }
-
-  CodeMirror.registerHelper("hint", "python", getHintList);
-  CodeMirror.registerHelper("hint", "sql", getHintList);
-
-  // Auto-show autocomplete popup as you type words
-  editor.on("inputRead", function (cm, change) {
-    if (change.origin !== "+input") return;
-    const text = change.text[0];
-    if (/[a-zA-Z_\.]/.test(text)) {
-      cm.showHint({ completeSingle: false });
-    }
-  });
-
-  // Auto-save code to localStorage on change
-  editor.on("change", () => {
-    if (currentProblem) {
-      localStorage.setItem(`code_${currentProblem.id}`, editor.getValue());
-    }
-  });
-
-  // 2. Initialize Pyodide Status
-  window.pythonRunner.onStatusChange((status, isReady) => {
-    statusText.textContent = status;
-    if (isReady) {
-      statusDot.classList.add("ready");
-    } else {
-      statusDot.classList.remove("ready");
-    }
-  });
-
-  // 3. Problem Dropdown & Counter
-  function refreshProblemDropdown() {
-    problemSelect.innerHTML = "";
-    window.PROBLEMS.forEach((prob) => {
-      const opt = document.createElement("option");
-      opt.value = prob.id;
-      opt.textContent = prob.title;
-      problemSelect.appendChild(opt);
-    });
-    headerProblemCountBadge.textContent = window.PROBLEMS.length;
-    modalProblemCountText.textContent = `${window.PROBLEMS.length} problems available`;
-  }
-
-  // 4. Load Problem
-  function loadProblem(problemId) {
-    currentProblem = window.PROBLEMS.find(p => p.id === problemId) || window.PROBLEMS[0];
-    selectedCaseIndex = 0;
-    currentTestResults = null;
-
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    // Update Dropdown value
-    problemSelect.value = currentProblem.id;
-
-    // Update Language & Editor Mode
-    const isSql = (currentProblem.language === "sql");
-    editor.setOption("mode", isSql ? "text/x-sql" : "python");
-
-    const editorTagLabel = document.querySelector(".editor-lang-tag span");
-    if (editorTagLabel) {
-      editorTagLabel.textContent = isSql ? "SQL (SQLite Engine)" : "Python 3 (Auto-Indent + Autocomplete)";
-    }
-
-    // Left Pane Content Update with Subtle GSAP Crossfade
-    const paneContent = document.querySelector(".pane-content");
-
-    const applyContentUpdate = () => {
-      problemTitle.textContent = currentProblem.title;
-      problemCategory.textContent = currentProblem.category || "Algorithm";
-      problemTag.textContent = currentProblem.tag;
-      problemTag.className = `badge ${currentProblem.badgeColor || "green"}`;
-      problemDifficulty.textContent = currentProblem.difficulty;
-
-      problemDescription.innerHTML = currentProblem.description;
-      problemIntuition.innerHTML = currentProblem.intuition;
-      solutionCode.textContent = currentProblem.optimalSolution;
-
-      // Load Code into Editor
-      const savedCode = localStorage.getItem(`code_${currentProblem.id}`);
-      editor.setValue(savedCode ? savedCode : currentProblem.starterCode);
-      editor.clearHistory();
-
-      // Render test case chips
-      renderConsoleChips();
-      renderInitialConsole();
-
-      // Refresh Modal highlight if open
-      renderModalCardList();
-    };
-
-    if (window.gsap && !prefersReducedMotion && paneContent && paneContent.offsetParent !== null) {
-      gsap.to(paneContent, {
-        opacity: 0,
-        y: -10,
-        scale: 0.995,
-        duration: 0.18,
-        ease: "power2.in",
-        onComplete: () => {
-          applyContentUpdate();
-          gsap.fromTo(
-            paneContent,
-            { opacity: 0, y: 14, scale: 0.99 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              duration: 0.45,
-              ease: "expo.out",
-              clearProps: "transform,opacity"
-            }
-          );
-        }
-      });
-    } else {
-      applyContentUpdate();
-    }
-  }
-
-  // 5. Tab Switching (Problem, Intuition, Solution) with GSAP
+  // 7. Left Pane Tabs (Problem, Intuition, Solution)
   tabButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       const targetViewId = btn.dataset.target;
@@ -446,43 +217,11 @@ document.addEventListener("DOMContentLoaded", () => {
       tabButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
 
-      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      if (window.gsap && !prefersReducedMotion) {
-        tabViews.forEach(v => {
-          if (v.classList.contains("active") && v !== targetView) {
-            gsap.to(v, {
-              opacity: 0,
-              y: -6,
-              duration: 0.14,
-              ease: "power2.in",
-              onComplete: () => {
-                v.classList.remove("active");
-                targetView.classList.add("active");
-                gsap.fromTo(
-                  targetView,
-                  { opacity: 0, y: 10, scale: 0.997 },
-                  {
-                    opacity: 1,
-                    y: 0,
-                    scale: 1,
-                    duration: 0.38,
-                    ease: "expo.out",
-                    clearProps: "transform,opacity"
-                  }
-                );
-              }
-            });
-          }
-        });
-      } else {
-        tabViews.forEach(v => v.classList.remove("active"));
-        targetView.classList.add("active");
-      }
+      animateTabSwitch(tabViews, targetView);
     });
   });
 
-  // 6. Editor Actions
+  // 8. Editor Actions (Reset, Copy, Load Solution)
   resetCodeBtn.addEventListener("click", () => {
     if (confirm("Reset editor to original starter code for this problem?")) {
       editor.setValue(currentProblem.starterCode);
@@ -511,135 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 7. Test Console Rendering
-  function renderConsoleChips() {
-    consoleTabs.innerHTML = "";
-    currentProblem.testCases.forEach((tc, idx) => {
-      const chip = document.createElement("button");
-      chip.className = `case-chip ${idx === selectedCaseIndex ? "active" : ""}`;
-
-      let statusIcon = "";
-      if (currentTestResults && currentTestResults.results[idx]) {
-        const passed = currentTestResults.results[idx].passed;
-        chip.classList.add(passed ? "pass" : "fail");
-        statusIcon = passed ? "✓ " : "✕ ";
-      }
-
-      chip.textContent = `${statusIcon}Case ${idx + 1}`;
-      chip.addEventListener("click", () => {
-        selectedCaseIndex = idx;
-        renderConsoleChips();
-        renderActiveCaseDetail();
-      });
-
-      consoleTabs.appendChild(chip);
-    });
-  }
-
-  function renderInitialConsole() {
-    consoleBody.innerHTML = `
-      <div class="empty-console">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="5 3 19 12 5 21 5 3"></polygon>
-        </svg>
-        <span>Press "Run Code" or hit Ctrl+Enter to test your solution against ${currentProblem.testCases.length} test cases.</span>
-      </div>
-    `;
-  }
-
-  function renderActiveCaseDetail() {
-    if (!currentTestResults || !currentTestResults.results.length) {
-      const tc = currentProblem.testCases[selectedCaseIndex];
-      if (!tc) return;
-      consoleBody.innerHTML = `
-        <div class="case-detail-card">
-          <div class="case-row">
-            <span class="case-label">Case ${selectedCaseIndex + 1} Note</span>
-            <div class="case-val">${escapeHtml(tc.note || "Standard test case")}</div>
-          </div>
-          <div class="case-row">
-            <span class="case-label">Input</span>
-            <div class="case-val">${escapeHtml(tc.input)}</div>
-          </div>
-          <div class="case-row">
-            <span class="case-label">Expected Output</span>
-            <div class="case-val">${escapeHtml(String(tc.expected))}</div>
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    const res = currentTestResults.results[selectedCaseIndex];
-    if (!res) return;
-
-    const passStatus = res.passed ? "PASSED" : "FAILED";
-    const passColor = res.passed ? "var(--accent-green)" : "var(--accent-red)";
-
-    let logsHtml = "";
-    if (res.logs && res.logs.trim()) {
-      logsHtml = `
-        <div class="case-row">
-          <span class="case-label">Console Output (stdout)</span>
-          <div class="case-val">${escapeHtml(res.logs)}</div>
-        </div>
-      `;
-    }
-
-    let errorHtml = "";
-    if (res.error) {
-      errorHtml = `
-        <div class="case-row">
-          <span class="case-label">Error Details</span>
-          <div class="case-val error">${escapeHtml(res.error)}</div>
-        </div>
-      `;
-    }
-
-    consoleBody.innerHTML = `
-      <div class="summary-banner ${currentTestResults.allPassed ? "all-pass" : "has-fail"}">
-        <span>${currentTestResults.allPassed ? "All Test Cases Passed!" : "Some Test Cases Failed"}</span>
-        <span>Runtime: ${currentTestResults.executionMs}ms</span>
-      </div>
-
-      <div class="case-detail-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <span style="font-weight: 600; color: ${passColor};">${passStatus} (Case ${selectedCaseIndex + 1})</span>
-          <span style="color: var(--text-muted); font-size: 11px;">${escapeHtml(currentProblem.testCases[selectedCaseIndex].note || "")}</span>
-        </div>
-
-        <div class="case-row">
-          <span class="case-label">Input</span>
-          <div class="case-val">${escapeHtml(res.input)}</div>
-        </div>
-
-        <div class="case-row">
-          <span class="case-label">Expected Output</span>
-          <div class="case-val">${escapeHtml(String(res.expected))}</div>
-        </div>
-
-        <div class="case-row">
-          <span class="case-label">Your Output</span>
-          <div class="case-val ${!res.passed ? "error" : ""}">${escapeHtml(String(res.actual))}</div>
-        </div>
-
-        ${logsHtml}
-        ${errorHtml}
-      </div>
-    `;
-  }
-
-  function escapeHtml(str) {
-    if (typeof str !== "string") str = String(str);
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  // 8. Run Code Action
+  // 9. Run Code Action
   async function runCode() {
     const userCode = editor.getValue();
 
@@ -653,40 +264,18 @@ document.addEventListener("DOMContentLoaded", () => {
       <span>Testing...</span>
     `;
 
-    consoleBody.innerHTML = `
-      <div class="empty-console">
-        <span>Running solution against test suite in Pyodide...</span>
-      </div>
-    `;
+    testConsole.renderRunningState();
 
     try {
       const outcome = await window.pythonRunner.runTests(userCode, currentProblem);
 
       if (!outcome.success && outcome.error) {
-        currentTestResults = null;
-        consoleBody.innerHTML = `
-          <div class="summary-banner has-fail">
-            <span>Execution Error</span>
-          </div>
-          <div class="case-detail-card">
-            <div class="case-row">
-              <span class="case-label">Error Details</span>
-              <div class="case-val error">${escapeHtml(outcome.error)}</div>
-            </div>
-          </div>
-        `;
-        renderConsoleChips();
+        testConsole.renderExecutionError(outcome.error);
       } else {
-        currentTestResults = outcome;
-        renderConsoleChips();
-        renderActiveCaseDetail();
+        testConsole.setTestResults(outcome);
       }
     } catch (err) {
-      consoleBody.innerHTML = `
-        <div class="case-detail-card">
-          <div class="case-val error">Unexpected failure: ${escapeHtml(err.message || String(err))}</div>
-        </div>
-      `;
+      testConsole.renderExecutionError(err.message || String(err));
     } finally {
       runCodeBtn.disabled = false;
       runCodeBtn.innerHTML = originalBtnContent;
@@ -697,189 +286,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   problemSelect.addEventListener("change", (e) => {
     loadProblem(e.target.value);
-    switchView("workspace");
+    transitions.switchView("workspace");
   });
 
-  // 9. Problem Catalog Drawer Implementation with GSAP & Physical Momentum
-  function openModal() {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    problemCatalogModal.classList.remove("hidden");
-    problemCatalogModal.setAttribute("aria-hidden", "false");
-    problemSearchInput.focus();
-    renderModalCardList();
-
-    if (window.gsap && !prefersReducedMotion) {
-      const drawer = problemCatalogModal.querySelector(".modal-drawer");
-      const backdrop = problemCatalogModal.querySelector(".modal-backdrop");
-      const cards = modalCardList.querySelectorAll(".problem-card");
-
-      gsap.fromTo(backdrop, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" });
-      gsap.fromTo(
-        drawer,
-        { x: "-100%" },
-        { x: "0%", duration: 0.48, ease: "expo.out" }
-      );
-
-      if (cards.length > 0) {
-        gsap.fromTo(
-          cards,
-          { opacity: 0, x: -20, scale: 0.98 },
-          {
-            opacity: 1,
-            x: 0,
-            scale: 1,
-            duration: 0.42,
-            stagger: 0.05,
-            delay: 0.12,
-            ease: "expo.out",
-            clearProps: "transform,opacity"
-          }
-        );
+  // 10. Pyodide Status Indicator
+  if (window.pythonRunner) {
+    window.pythonRunner.onStatusChange((status, isReady) => {
+      if (statusText) statusText.textContent = status;
+      if (statusDot) {
+        if (isReady) statusDot.classList.add("ready");
+        else statusDot.classList.remove("ready");
       }
-    }
-  }
-
-  function closeModal() {
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const drawer = problemCatalogModal.querySelector(".modal-drawer");
-    const backdrop = problemCatalogModal.querySelector(".modal-backdrop");
-
-    if (window.gsap && !prefersReducedMotion && drawer && backdrop) {
-      gsap.to(backdrop, { opacity: 0, duration: 0.26, ease: "power2.in" });
-      gsap.to(drawer, {
-        x: "-100%",
-        duration: 0.32,
-        ease: "power3.in",
-        onComplete: () => {
-          problemCatalogModal.classList.add("hidden");
-          problemCatalogModal.setAttribute("aria-hidden", "true");
-        }
-      });
-    } else {
-      problemCatalogModal.classList.add("hidden");
-      problemCatalogModal.setAttribute("aria-hidden", "true");
-    }
-  }
-
-  openProblemCatalogBtn.addEventListener("click", openModal);
-  closeModalBtn.addEventListener("click", closeModal);
-  modalBackdrop.addEventListener("click", closeModal);
-
-  // Esc key closes modal
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !problemCatalogModal.classList.contains("hidden")) {
-      closeModal();
-    }
-  });
-
-  // Category Filters Setup
-  function setupFilterChips() {
-    const categories = window.GET_CATEGORIES();
-    categoryChips.innerHTML = "";
-    categories.forEach(cat => {
-      const chip = document.createElement("button");
-      chip.className = `filter-chip ${cat === activeCategory ? "active" : ""}`;
-      chip.textContent = cat;
-      chip.addEventListener("click", () => {
-        activeCategory = cat;
-        setupFilterChips();
-        renderModalCardList();
-      });
-      categoryChips.appendChild(chip);
-    });
-
-    // Difficulty Chips setup
-    const diffButtons = difficultyChips.querySelectorAll(".filter-chip");
-    diffButtons.forEach(btn => {
-      btn.addEventListener("click", () => {
-        diffButtons.forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        activeDifficulty = btn.dataset.diff;
-        renderModalCardList();
-      });
-    });
-  }
-
-  // Search input listeners
-  problemSearchInput.addEventListener("input", (e) => {
-    searchQuery = e.target.value.trim().toLowerCase();
-    clearSearchBtn.style.display = searchQuery ? "block" : "none";
-    renderModalCardList();
-  });
-
-  clearSearchBtn.addEventListener("click", () => {
-    problemSearchInput.value = "";
-    searchQuery = "";
-    clearSearchBtn.style.display = "none";
-    problemSearchInput.focus();
-    renderModalCardList();
-  });
-
-  // Filter & Render Modal Cards
-  function renderModalCardList() {
-    modalCardList.innerHTML = "";
-
-    const filtered = window.PROBLEMS.filter(prob => {
-      // Category filter
-      if (activeCategory !== "All" && prob.category !== activeCategory) {
-        return false;
-      }
-      // Difficulty filter
-      if (activeDifficulty !== "All" && prob.difficulty !== activeDifficulty) {
-        return false;
-      }
-      // Search filter (searches title, tag, summary, description)
-      if (searchQuery) {
-        const hay = `${prob.title} ${prob.tag} ${prob.summary} ${prob.category}`.toLowerCase();
-        if (!hay.includes(searchQuery)) return false;
-      }
-      return true;
-    });
-
-    if (filtered.length === 0) {
-      modalCardList.innerHTML = `
-        <div class="no-results">
-          <p>No problems match your search or filter.</p>
-        </div>
-      `;
-      return;
-    }
-
-    filtered.forEach(prob => {
-      const card = document.createElement("div");
-      card.className = `problem-card ${prob.id === currentProblem.id ? "active-problem" : ""}`;
-
-      card.innerHTML = `
-        <div class="card-top">
-          <div class="card-title">${escapeHtml(prob.title)}</div>
-          <div class="card-badges">
-            <span class="badge blue">${escapeHtml(prob.category || "Algorithm")}</span>
-            <span class="badge ${prob.badgeColor || "green"}">${escapeHtml(prob.difficulty)}</span>
-          </div>
-        </div>
-        <div class="card-summary">${escapeHtml(prob.summary)}</div>
-        <div class="card-footer">
-          <span>Tag: ${escapeHtml(prob.tag)}</span>
-          <span>${prob.testCases.length} Test Cases</span>
-        </div>
-      `;
-
-      card.addEventListener("click", () => {
-        loadProblem(prob.id);
-        closeModal();
-      });
-
-      modalCardList.appendChild(card);
     });
   }
 
   // Initial Boot
   refreshProblemDropdown();
-  setupFilterChips();
+  catalog.setupFilterChips();
   renderHomeProblemLedger();
-  loadProblem(window.PROBLEMS[0].id);
-  switchView("home");
+  if (window.PROBLEMS && window.PROBLEMS.length > 0) {
+    loadProblem(window.PROBLEMS[0].id);
+  }
+  transitions.switchView("home");
 
-  // Initialize Pyodide
-  window.pythonRunner.init();
+  // Boot Pyodide WASM Engine
+  if (window.pythonRunner) {
+    window.pythonRunner.init();
+  }
 });
