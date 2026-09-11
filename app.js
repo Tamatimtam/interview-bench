@@ -48,43 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const homeProblemLedgerList = document.getElementById("homeProblemLedgerList");
   const ledgerCountBadge = document.getElementById("ledgerCountBadge");
 
-  // Custom Quirky Interactive Cursor Controller
-  const customCursor = document.getElementById("customCursor");
-  if (customCursor) {
-    const dot = customCursor.querySelector(".cursor-dot");
-    const ring = customCursor.querySelector(".cursor-ring");
-    let mouseX = -100, mouseY = -100;
-    let ringX = -100, ringY = -100;
-
-    window.addEventListener("mousemove", (e) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
-    });
-
-    window.addEventListener("mousedown", () => customCursor.classList.add("cursor-click"));
-    window.addEventListener("mouseup", () => customCursor.classList.remove("cursor-click"));
-
-    function renderCursorRing() {
-      ringX += (mouseX - ringX) * 0.22;
-      ringY += (mouseY - ringY) * 0.22;
-      ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0)`;
-      requestAnimationFrame(renderCursorRing);
-    }
-    requestAnimationFrame(renderCursorRing);
-
-    window.__attachCursorHovers = function() {
-      document.querySelectorAll("button, a, select, .ledger-row, .tab-btn, .chip, .card").forEach(el => {
-        if (!el.__hasCursorListener) {
-          el.__hasCursorListener = true;
-          el.addEventListener("mouseenter", () => customCursor.classList.add("cursor-hover"));
-          el.addEventListener("mouseleave", () => customCursor.classList.remove("cursor-hover"));
-        }
-      });
-    };
-    window.__attachCursorHovers();
-  }
-
   // State
   let currentProblem = window.PROBLEMS[0];
   let currentTestResults = null;
@@ -110,7 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (navViewHomeBtn) navViewHomeBtn.classList.add("active");
       if (navViewWorkspaceBtn) navViewWorkspaceBtn.classList.remove("active");
     }
-    if (window.__attachCursorHovers) window.__attachCursorHovers();
   }
 
   if (navViewHomeBtn) navViewHomeBtn.addEventListener("click", () => switchView("home"));
@@ -161,8 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       homeProblemLedgerList.appendChild(row);
     });
-
-    if (window.__attachCursorHovers) window.__attachCursorHovers();
   }
 
   // 1. Initialize CodeMirror Editor
