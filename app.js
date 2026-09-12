@@ -37,10 +37,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const workspaceView = document.getElementById("workspaceView");
   const navViewHomeBtn = document.getElementById("navViewHomeBtn");
   const navViewWorkspaceBtn = document.getElementById("navViewWorkspaceBtn");
-  const homeLaunchWorkspaceBtn = document.getElementById("homeLaunchWorkspaceBtn");
   const homeProblemLedgerList = document.getElementById("homeProblemLedgerList");
   const ledgerCountBadge = document.getElementById("ledgerCountBadge");
   const headerProblemCountBadge = document.getElementById("headerProblemCountBadge");
+  const toggleAllFoldersBtn = document.getElementById("toggleAllFoldersBtn");
+
+  const FOLDER_MAP = {
+    "Warmup": { path: "problems/warmups/", label: "Warmup Challenges" },
+    "Heap": { path: "problems/heaps/", label: "Heap & Priority Queues" },
+    "SQL": { path: "problems/sql/", label: "SQL & Relational Databases" },
+    "Greedy": { path: "problems/greedy/", label: "Greedy & Game Theory" }
+  };
 
   // State
   let currentProblem = (window.PROBLEMS && window.PROBLEMS[0]) || null;
@@ -142,16 +149,32 @@ document.addEventListener("DOMContentLoaded", () => {
     animateProblemLoad(paneContent, applyContentUpdate);
   }
 
-  // 6. Navigation Problem Dropdown & Homepage Ledger
+  // 6. Navigation Problem Dropdown & Homepage Ledger (Folder-Based Directory)
   function refreshProblemDropdown() {
     if (!problemSelect) return;
     problemSelect.innerHTML = "";
+
+    // Group problems by category folder
+    const groups = {};
     (window.PROBLEMS || []).forEach((prob) => {
-      const opt = document.createElement("option");
-      opt.value = prob.id;
-      opt.textContent = prob.title;
-      problemSelect.appendChild(opt);
+      const cat = prob.category || "General";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(prob);
     });
+
+    Object.keys(groups).forEach((cat) => {
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = `📁 ${cat} (${groups[cat].length})`;
+
+      groups[cat].forEach((prob) => {
+        const opt = document.createElement("option");
+        opt.value = prob.id;
+        opt.textContent = prob.title;
+        optgroup.appendChild(opt);
+      });
+      problemSelect.appendChild(optgroup);
+    });
+
     if (headerProblemCountBadge) headerProblemCountBadge.textContent = window.PROBLEMS.length;
   }
 
@@ -162,55 +185,133 @@ document.addEventListener("DOMContentLoaded", () => {
       ledgerCountBadge.textContent = `${(window.PROBLEMS || []).length} challenges`;
     }
 
-    (window.PROBLEMS || []).forEach((prob, idx) => {
-      const row = document.createElement("div");
-      row.className = "ledger-row";
-      const numStr = String(idx + 1).padStart(2, "0");
-      const isSql = prob.language === "sql";
-      const langBadge = isSql ? "SQL" : "Python";
+    // Group problems by category / folder
+    const groups = {};
+    (window.PROBLEMS || []).forEach((prob) => {
+      const cat = prob.category || "General";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(prob);
+    });
 
-      row.innerHTML = `
-        <div class="ledger-row-left">
-          <span class="ledger-row-id">${numStr}</span>
-          <div class="ledger-row-info">
-            <span class="ledger-row-title">${escapeHtml(prob.title)}</span>
-            <div class="ledger-row-sub">
-              <span class="ledger-badge">${escapeHtml(prob.tag || "Core Pattern")}</span>
-              <span>${escapeHtml(prob.summary)}</span>
-            </div>
+    Object.keys(groups).forEach((cat) => {
+      const problemsInCat = groups[cat];
+      const folderInfo = FOLDER_MAP[cat] || { path: `problems/${cat.toLowerCase()}/`, label: cat };
+
+      const folderEl = document.createElement("div");
+      folderEl.className = "ledger-folder";
+      folderEl.dataset.category = cat;
+
+      folderEl.innerHTML = `
+        <div class="ledger-folder-header">
+          <div class="ledger-folder-title-wrap">
+            <span class="folder-icon">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+              </svg>
+            </span>
+            <span class="folder-name">${escapeHtml(folderInfo.label || cat)}</span>
+            <span class="folder-path-pill">${escapeHtml(folderInfo.path)}</span>
+            <span class="folder-count-pill">${problemsInCat.length} ${problemsInCat.length === 1 ? 'file' : 'files'}</span>
+          </div>
+          <div class="ledger-folder-right">
+            <svg class="folder-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
           </div>
         </div>
-        <div class="ledger-row-right">
-          <span class="ledger-badge" style="color: var(--brand); border-color: var(--brand-border);">${langBadge}</span>
-          <span class="ledger-badge">${escapeHtml(prob.difficulty)}</span>
-          <span class="ledger-solve-link">
-            <span>Solve</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-          </span>
-        </div>
+        <div class="ledger-folder-body"></div>
       `;
 
-      row.addEventListener("click", () => {
-        const reducedMotion = prefersReducedMotion();
-        if (window.gsap && !reducedMotion) {
-          gsap.to(row, {
-            scale: 0.985,
-            y: 1.5,
-            duration: 0.09,
-            ease: "power2.in",
-            onComplete: () => {
-              gsap.to(row, { scale: 1, y: 0, duration: 0.15, ease: "power2.out" });
-              loadProblem(prob.id);
-              transitions.switchView("workspace");
-            }
-          });
-        } else {
-          loadProblem(prob.id);
-          transitions.switchView("workspace");
-        }
+      const header = folderEl.querySelector(".ledger-folder-header");
+      const body = folderEl.querySelector(".ledger-folder-body");
+
+      header.addEventListener("click", () => {
+        folderEl.classList.toggle("collapsed");
       });
 
-      homeProblemLedgerList.appendChild(row);
+      problemsInCat.forEach((prob, idx) => {
+        const row = document.createElement("div");
+        row.className = "ledger-row";
+        const numStr = String(idx + 1).padStart(2, "0");
+        const isSql = prob.language === "sql";
+        const langBadge = isSql ? "SQL" : "Python";
+
+        row.innerHTML = `
+          <div class="ledger-row-left">
+            <span class="file-icon">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+            </span>
+            <span class="ledger-row-id">${numStr}</span>
+            <div class="ledger-row-info">
+              <span class="ledger-row-title">${escapeHtml(prob.title)}</span>
+              <div class="ledger-row-sub">
+                <span class="ledger-badge">${escapeHtml(prob.tag || "Core Pattern")}</span>
+                <span>${escapeHtml(prob.summary)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="ledger-row-right">
+            <span class="ledger-badge" style="color: var(--brand); border-color: var(--brand-border);">${langBadge}</span>
+            <span class="ledger-badge">${escapeHtml(prob.difficulty)}</span>
+            <span class="ledger-solve-link">
+              <span>Solve</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </span>
+          </div>
+        `;
+
+        row.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const reducedMotion = prefersReducedMotion();
+          if (window.gsap && !reducedMotion) {
+            gsap.to(row, {
+              scale: 0.985,
+              y: 1.5,
+              duration: 0.09,
+              ease: "power2.in",
+              onComplete: () => {
+                gsap.to(row, { scale: 1, y: 0, duration: 0.15, ease: "power2.out" });
+                loadProblem(prob.id);
+                transitions.switchView("workspace");
+              }
+            });
+          } else {
+            loadProblem(prob.id);
+            transitions.switchView("workspace");
+          }
+        });
+
+        body.appendChild(row);
+      });
+
+      homeProblemLedgerList.appendChild(folderEl);
+    });
+  }
+
+  // Toggle All Folders Expand / Collapse
+  let allFoldersCollapsed = false;
+  if (toggleAllFoldersBtn) {
+    toggleAllFoldersBtn.addEventListener("click", () => {
+      allFoldersCollapsed = !allFoldersCollapsed;
+      const folders = document.querySelectorAll(".ledger-folder");
+      folders.forEach(f => {
+        if (allFoldersCollapsed) f.classList.add("collapsed");
+        else f.classList.remove("collapsed");
+      });
+      toggleAllFoldersBtn.innerHTML = allFoldersCollapsed ? `
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+        <span>Expand All</span>
+      ` : `
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+        <span>Collapse All</span>
+      `;
     });
   }
 

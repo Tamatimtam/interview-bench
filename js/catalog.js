@@ -125,31 +125,66 @@ export function initCatalog({
       return;
     }
 
+    // Group filtered cards by folder category
+    const groups = {};
     filtered.forEach(prob => {
-      const card = document.createElement("div");
-      card.className = `problem-card ${prob.id === currentId ? "active-problem" : ""}`;
+      const cat = prob.category || "General";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(prob);
+    });
 
-      card.innerHTML = `
-        <div class="card-top">
-          <div class="card-title">${escapeHtml(prob.title)}</div>
-          <div class="card-badges">
-            <span class="badge blue">${escapeHtml(prob.category || "Algorithm")}</span>
-            <span class="badge ${prob.badgeColor || "green"}">${escapeHtml(prob.difficulty)}</span>
+    const FOLDER_PATHS = {
+      "Warmup": "problems/warmups/",
+      "Heap": "problems/heaps/",
+      "SQL": "problems/sql/",
+      "Greedy": "problems/greedy/"
+    };
+
+    Object.keys(groups).forEach(cat => {
+      const folderSection = document.createElement("div");
+      folderSection.className = "catalog-folder-section";
+
+      const folderPath = FOLDER_PATHS[cat] || `problems/${cat.toLowerCase()}/`;
+
+      folderSection.innerHTML = `
+        <div class="catalog-folder-header">
+          <div class="catalog-folder-title">
+            <span style="color: #f59e0b; font-size: 14px;">📁</span>
+            <span>${escapeHtml(cat)}</span>
+            <span class="folder-count-pill">${groups[cat].length}</span>
           </div>
-        </div>
-        <div class="card-summary">${escapeHtml(prob.summary)}</div>
-        <div class="card-footer">
-          <span>Tag: ${escapeHtml(prob.tag)}</span>
-          <span>${prob.testCases ? prob.testCases.length : 0} Test Cases</span>
+          <span class="catalog-folder-path">${escapeHtml(folderPath)}</span>
         </div>
       `;
 
-      card.addEventListener("click", () => {
-        if (onSelectProblem) onSelectProblem(prob.id);
-        closeModal();
+      groups[cat].forEach(prob => {
+        const card = document.createElement("div");
+        card.className = `problem-card ${prob.id === currentId ? "active-problem" : ""}`;
+
+        card.innerHTML = `
+          <div class="card-top">
+            <div class="card-title">${escapeHtml(prob.title)}</div>
+            <div class="card-badges">
+              <span class="badge blue">${escapeHtml(prob.category || "Algorithm")}</span>
+              <span class="badge ${prob.badgeColor || "green"}">${escapeHtml(prob.difficulty)}</span>
+            </div>
+          </div>
+          <div class="card-summary">${escapeHtml(prob.summary)}</div>
+          <div class="card-footer">
+            <span>Tag: ${escapeHtml(prob.tag)}</span>
+            <span>${prob.testCases ? prob.testCases.length : 0} Test Cases</span>
+          </div>
+        `;
+
+        card.addEventListener("click", () => {
+          if (onSelectProblem) onSelectProblem(prob.id);
+          closeModal();
+        });
+
+        folderSection.appendChild(card);
       });
 
-      cardListContainer.appendChild(card);
+      cardListContainer.appendChild(folderSection);
     });
 
     if (countText) {

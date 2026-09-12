@@ -131,10 +131,18 @@
         <section class="problem-ledger">
           <div class="ledger-header">
             <div>
-              <span class="ledger-mono-label">CATALOGUE</span>
+              <span class="ledger-mono-label">EXPLORER // DIRECTORY VIEW</span>
               <h2 class="ledger-title">Problems & Interview Pivots</h2>
             </div>
-            <span id="ledgerCountBadge" class="ledger-count-pill">7 challenges</span>
+            <div class="ledger-header-actions">
+              <button id="toggleAllFoldersBtn" class="folder-action-btn" title="Expand or collapse all folders">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                <span>Collapse All</span>
+              </button>
+              <span id="ledgerCountBadge" class="ledger-count-pill">8 challenges</span>
+            </div>
           </div>
 
           <div id="homeProblemLedgerList" class="ledger-table-wrap">
@@ -350,6 +358,8 @@
   <!-- SQL Databases -->
   <script src="problems/sql/06-sql-properties-owned.js"></script>
   <script src="problems/sql/07-sql-active-backlogs.js"></script>
+  <!-- Greedy & Game Theory -->
+  <script src="problems/greedy/09-number-game.js"></script>
 
   <!-- Execution Engine & Application Controller -->
   <script src="runner.js"></script>
