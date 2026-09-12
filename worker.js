@@ -72,13 +72,16 @@ try:
         actual = eval(call_expr, globals())
         
         captured_log = __user_stdout.getvalue()
-        passed = (actual == expected)
+        passed = (actual == expected) or (captured_log.rstrip() == str(expected).rstrip())
+        
+        # If user function printed output rather than returning a value, show printed output
+        display_actual = actual if actual is not None else captured_log.rstrip()
         
         __results.append({
             "test_index": idx,
             "input": raw_input,
             "expected": expected,
-            "actual": actual,
+            "actual": display_actual,
             "passed": passed,
             "logs": captured_log,
             "error": None

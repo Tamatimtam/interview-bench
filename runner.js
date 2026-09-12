@@ -205,8 +205,10 @@ try:
     for idx, tc in enumerate(${JSON.stringify(testCases)}):
         __out.seek(0); __out.truncate(0)
         act = user_func(*tc['input']) if isinstance(tc['input'], tuple) else user_func(tc['input'])
-        passed = (act == tc['expected'])
-        __results.append({"test_index": idx, "input": tc['input'], "expected": tc['expected'], "actual": act, "passed": passed, "logs": __out.getvalue(), "error": None})
+        captured = __out.getvalue()
+        passed = (act == tc['expected']) or (captured.rstrip() == str(tc['expected']).rstrip())
+        disp_act = act if act is not None else captured.rstrip()
+        __results.append({"test_index": idx, "input": tc['input'], "expected": tc['expected'], "actual": disp_act, "passed": passed, "logs": captured, "error": None})
 except Exception as e:
     __results.append({"test_index": -1, "input": "Execution Error", "expected": None, "actual": None, "passed": False, "logs": __out.getvalue() if '__out' in locals() else "", "error": traceback.format_exc()})
 finally:
