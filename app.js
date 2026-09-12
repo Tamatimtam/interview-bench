@@ -29,6 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const consoleTabs = document.getElementById("consoleTabs");
   const consoleBody = document.getElementById("consoleBody");
+  const consoleSection = document.getElementById("consoleSection");
+  const celebrationCanvas = document.getElementById("celebrationCanvas");
 
   // Home & Navigation Elements
   const homeView = document.getElementById("homeView");
@@ -43,8 +45,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // State
   let currentProblem = (window.PROBLEMS && window.PROBLEMS[0]) || null;
 
-  // 1. Initialize Test Console UI Module
-  const testConsole = initConsole({ consoleTabs, consoleBody });
+  // 1. Initialize Test Console UI Module with Game-Feel FX
+  const testConsole = initConsole({
+    consoleSection,
+    consoleTabs,
+    consoleBody,
+    celebrationCanvas
+  });
 
   // 2. Initialize CodeMirror Editor Module
   const editor = createEditor({
@@ -250,33 +257,72 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 9. Run Code Action
+  // 9. Run Code Action with Physical Feedback & Dopamine Loop
   async function runCode() {
+    if (runCodeBtn.disabled) return;
+    const reducedMotion = prefersReducedMotion();
     const userCode = editor.getValue();
 
+    // 1. Physical Button Compression & Rapid Overshoot (Game-feel click)
+    if (window.gsap && !reducedMotion) {
+      gsap.timeline()
+        .to(runCodeBtn, { scale: 0.93, y: 2, duration: 0.07, ease: "power2.in" })
+        .to(runCodeBtn, { scale: 1, y: 0, duration: 0.2, ease: "back.out(2.5)" });
+    }
+
     runCodeBtn.disabled = true;
-    const originalBtnContent = runCodeBtn.innerHTML;
+    runCodeBtn.classList.add("is-running");
+    const originalBtnContent = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+      <span>Run Code</span>
+    `;
+
     runCodeBtn.innerHTML = `
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin">
         <circle cx="12" cy="12" r="10"></circle>
         <path d="M12 2a10 10 0 0 1 10 10"></path>
       </svg>
-      <span>Testing...</span>
+      <span>Executing...</span>
     `;
 
-    testConsole.renderRunningState();
+    // 2. Start Live Anticipation in Test Console (Pipeline + Energy Bar)
+    testConsole.startExecution();
 
     try {
+      // 3. Execute in Pyodide WebAssembly Worker
       const outcome = await window.pythonRunner.runTests(userCode, currentProblem);
 
       if (!outcome.success && outcome.error) {
         testConsole.renderExecutionError(outcome.error);
       } else {
-        testConsole.setTestResults(outcome);
+        // 4. Sequential Resolution Loop (Small dopamine hits + grand finale)
+        const res = await testConsole.resolveTestSequence(outcome);
+
+        if (res && res.allPassed) {
+          // Button Victory Ack
+          runCodeBtn.classList.remove("is-running");
+          runCodeBtn.classList.add("is-success");
+          runCodeBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Passed!</span>
+          `;
+
+          if (window.gsap && !reducedMotion) {
+            gsap.fromTo(runCodeBtn, { scale: 1.08 }, { scale: 1, duration: 0.3, ease: "back.out(2)" });
+          }
+
+          await new Promise(r => setTimeout(r, 900));
+        }
       }
     } catch (err) {
       testConsole.renderExecutionError(err.message || String(err));
     } finally {
+      runCodeBtn.classList.remove("is-running");
+      runCodeBtn.classList.remove("is-success");
       runCodeBtn.disabled = false;
       runCodeBtn.innerHTML = originalBtnContent;
     }

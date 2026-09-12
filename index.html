@@ -258,9 +258,14 @@
         </div>
 
         <!-- Test Case Runner Console -->
-        <div class="console-section">
+        <div class="console-section" id="consoleSection">
+          <div class="console-energy-bar" id="consoleEnergyBar"></div>
+          <canvas id="celebrationCanvas" class="celebration-canvas"></canvas>
           <div class="console-toolbar">
-            <div class="console-title">Test Runner</div>
+            <div class="console-title">
+              <span class="runner-dot-indicator"></span>
+              <span>Test Runner</span>
+            </div>
             <div id="consoleTabs" class="console-tabs">
               <!-- Dynamically populated test case buttons -->
             </div>
